@@ -1976,18 +1976,22 @@ def test_SOC_P_plots():
     fig = plt.figure(num=3, clear=True)
     df_maxff_1 = df_data[df_data['max_ff'] == 1.0]
     df_maxff_1 = df_maxff_1.reset_index(drop=True)
+    df_maxff_1['delT'] = df_maxff_1['outlet_T'] - df_maxff_1['inlet_T']
     colors = ['r', 'b', 'g', 'k', 'm', 'c']
     for max_ff in df_data['max_ff'].unique():
         df_temp = df_data[df_data['max_ff'] == max_ff]
         df_temp['delT'] = df_temp['outlet_T'] - df_temp['inlet_T']
         df_temp = df_temp.reset_index(drop=True)
-        df_constP = df_temp[df_temp['delT'] >= df_temp['delT'][0]/max_ff]
-        df_not_const_SOC = df_temp[df_temp['delT'] < df_temp['delT'][0]/max_ff]
-        df_not_constP_power = df_maxff_1[df_temp['delT'] < df_temp['delT'][0]/max_ff]
+        df_constP_basecase = df_maxff_1[df_maxff_1['delT'] >= df_maxff_1['delT'][0]/max_ff]
+        # df_not_const_SOC = df_temp[df_temp['delT'] < df_temp['delT'][0]/max_ff]
+        df_not_constP_basecase = df_maxff_1[df_maxff_1['delT'] <= df_maxff_1['delT'][0]/max_ff]
+        # df_not_constP = df_not_constP[df_not_constP['SOC'] < df_constP['SOC'].values[-1]]
+        basecase_SOC = df_constP_basecase['SOC'].append(df_not_constP_basecase['SOC'])
+        # basecase_P
         color = colors.pop(0)
         plt.figure(1)
-        plt.plot(df_constP['SOC'], df_constP['power'], '.', color=color)
-        plt.plot(df_not_constP_power['SOC'], df_not_constP_power['power']*max_ff, '.', color=color)
+        plt.plot(df_constP_basecase['SOC'], df_constP_basecase['power'], '--', color=color)
+        plt.plot(df_not_constP_basecase['SOC'], df_not_constP_basecase['power']*max_ff, '--', color=color)
         plt.plot(df_temp['SOC'], df_temp['power'], label='max ff = %0.1f' % max_ff, color=color)
         plt.figure(3)
         plt.plot(df_temp['SOC'], df_temp['power'], label='max ff = %0.1f' % max_ff, color=color)
@@ -1998,7 +2002,7 @@ def test_SOC_P_plots():
     plt.ylabel('Power (W)')
     plt.legend()
     plt.tight_layout()
-    # plt.savefig('plots/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_P_31hrs.pdf')
+    plt.savefig('plots/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_P_31hrs_comp.pdf')
     plt.figure(2)
     plt.xlabel('SOC')
     plt.ylabel('Delta T (K)')
@@ -2011,7 +2015,7 @@ def test_SOC_P_plots():
     plt.legend()
     plt.tight_layout()
     plt.savefig('plots/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_P_31hrs.pdf')
-    # plt.show()
+    plt.show()
     pass
 
 
