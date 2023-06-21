@@ -5,6 +5,7 @@ code for graphite discharge modeling project
 | ----------- | ----------- | ------- | 
 | COMSOL_5block_sweep_hours_x_k.csv      | ideal_vs_realistic_tin_outlet.pdf       | discharge sweep over multiple hours for k=x. Plot was made for hours = 10, and k = 5, 10, 30 to demonstrate thermal energy vs. electrochemical storage. no change in flowrate
 | COMSOL_5block_10_k_fastcharge_sweep_basemaxflow.csv   | COMSOL_5block_10_k_fastcharge_sweep_basemaxflow_x_y_y.pdf and COMSOL_5block_10_k_fastcharge_sweep_basemaxflow_x.pdf        | charge sweep over multiple hours x, and multiple maximum flowrate factors y
+| COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC.csv | COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_P_31hrs_comp.pdf | charge sweep as above, also including P vs. SOC curves
 | COMSOL_5block_10_k_fastcharge_sweep_basemaxTin_cap_P.csv | COMSOL_5block_10_k_fastcharge_sweep_basemaxTin_x_y_y.png and OMSOL_5block_10_k_fastcharge_sweep_basemaxTin_x.png| charge sweep over multiple hours x, and multiple maximum tin temperatures y
 | COMSOL_5block_10_k_fastcharge_sweep_rad_gap_cap_thin(_2).csv | COMSOL_5block_10_k_fastcharge_sweep_rad_gap.pdf | charge sweep for 5 hours case, over multiple spacings between the tin tube and surrounding graphite 
 | COMSOL_5block_10_k_discharge_sweep_log_maxflow.csv | COMSOL_5block_10_k_discharge_sweep_maxflow_x_y.png and COMSOL_5block_10_k_discharge_sweep_maxflow_contour.png | discharge sweep over hours x and max flowrate factors y to achieve constant discharge power
