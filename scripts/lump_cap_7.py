@@ -2031,6 +2031,8 @@ def SOC_discharge_vary_mdot():
     energy_max, _, _ = energy_from_flowrate_hours(df_data['mass_flow'][0], df_data['hours'][0])
     SOCs = []
     powers = []
+    P_densities = []
+    P_heights_all = []
     for hours in tqdm(df_data['hours'].unique()):
         for max_ff in df_data['max_ff'].unique():
             df_temp = df_data[df_data['hours'] == hours][df_data['max_ff'] == max_ff]
@@ -2040,6 +2042,17 @@ def SOC_discharge_vary_mdot():
             df_temp['SOC'] = SOC
             SOCs = SOCs + list(df_temp['SOC'])
             powers = powers + list(power)
+            P_heights = []
+            for row in df_temp.iterrows():
+                Tout = row[1]['outlet_T']
+                mdot = row[1]['mass_flow']
+                P_height = power_block_ODE_height(Tout, mdot)
+                P_heights.append(P_height)
+            P_area = np.array(P_heights) * np.pi * (0.01*2)
+            P_density = np.array(power) / P_area
+            P_heights = np.array(P_heights)/P_heights[0]
+            P_heights_all = P_heights_all + list(P_heights)
+            P_densities = P_densities + list(P_density)
             # fig = plt.figure(num=1, clear=True)
             # plt.plot(SOC, power)
             # plt.xlabel('SOC')
@@ -2049,6 +2062,8 @@ def SOC_discharge_vary_mdot():
             pass
     df_data['SOC'] = SOCs
     df_data['power'] = powers
+    df_data['TPV_height'] = P_heights_all
+    df_data['TPV_density'] = P_densities
     df_data.to_csv('data/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC.csv', index=False)
     pass
 
@@ -2479,7 +2494,7 @@ def grid_varyflow_charging():
 # sq_block_sweep_hrs()
 # grid_varyflow()
 # grid_varyflow_charging()
-# SOC_discharge_vary_mdot()
+SOC_discharge_vary_mdot()
 # test_SOC_P_plots_discharge()
-fastcharge_CS_mdot_SOC()
-test_SOC_P_plots_charge()
+# fastcharge_CS_mdot_SOC()
+# test_SOC_P_plots_charge()
