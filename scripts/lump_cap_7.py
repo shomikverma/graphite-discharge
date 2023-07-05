@@ -1706,6 +1706,36 @@ def fastcharge_CS_mdot_SOC():
     df_data['power'] = powers
     df_data.to_csv('data/COMSOL_5block_10_k_fastcharge_sweep_basemaxflow_SOC.csv', index=False)
 
+def fastcharge_CS_mdot_SOC_2():
+    cp_Sn = 240
+    df_data = pd.read_csv('data/COMSOL_5block_10_k_fastcharge_sweep_hours_ff.csv', names=[
+        'hours', 'max_ff', 'time', 'inlet_T', 'outlet_T', 'mass_flow'], skiprows=5)
+    _, _, energy_max = energy_from_flowrate_hours(df_data['mass_flow'][0], df_data['hours'][0])
+    SOCs = []
+    powers = []
+    for hours in tqdm(df_data['hours'].unique()):
+        for max_ff in df_data['max_ff'].unique():
+            df_temp = df_data[df_data['hours'] == hours][df_data['max_ff'] == max_ff]
+            power = df_temp['mass_flow']*cp_Sn*(df_temp['inlet_T']-df_temp['outlet_T'])
+            try:
+                energy = cumtrapz(power, df_temp['time'], initial=0)
+            except:
+                continue
+            SOC = energy/energy_max
+            print(SOC[0])
+            # SOC = SOC - SOC[0]
+            df_temp['SOC'] = SOC
+            SOCs = SOCs + list(df_temp['SOC'])
+            powers = powers + list(power)
+            # fig = plt.figure(num=1, clear=True)
+            # plt.plot(SOC, power)
+            # plt.xlabel('SOC')
+            # plt.ylabel('Power (W)')
+            # plt.tight_layout()
+            # plt.show()
+    df_data['SOC'] = SOCs
+    df_data['power'] = powers
+    df_data.to_csv('data/COMSOL_5block_10_k_fastcharge_sweep_hours_ff_SOC.csv', index=False)
 
 def test_SOC_P_plots_charge():
     df_data = pd.read_csv('data/COMSOL_5block_10_k_fastcharge_sweep_basemaxflow_SOC.csv')
@@ -1742,19 +1772,19 @@ def test_SOC_P_plots_charge():
     plt.ylabel('Power (W)')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('plots/COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_P_31hrs_comp.pdf')
+    plt.savefig('plots/COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_P_5hrs_comp.pdf')
     plt.figure(2)
     plt.xlabel('SOC')
     plt.ylabel('Delta T (K)')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('plots/COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_T_31hrs.pdf')
+    plt.savefig('plots/COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_T_5hrs.pdf')
     plt.figure(3)
     plt.xlabel('SOC')
     plt.ylabel('Power (W)')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('plots/COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_P_31hrs.pdf')
+    plt.savefig('plots/COMSOL_5block_10_k_fastcharge_sweep_log_maxflow_SOC_P_5hrs.pdf')
     plt.show()
     pass
     pass
@@ -2048,7 +2078,7 @@ def SOC_discharge_vary_mdot():
                 mdot = row[1]['mass_flow']
                 P_height = power_block_ODE_height(Tout, mdot)
                 P_heights.append(P_height)
-            P_area = np.array(P_heights) * np.pi * (0.01*2)
+            P_area = np.array(P_heights) * np.pi * (0.015*2)
             P_density = np.array(power) / P_area
             P_heights = np.array(P_heights)/P_heights[0]
             P_heights_all = P_heights_all + list(P_heights)
@@ -2494,7 +2524,8 @@ def grid_varyflow_charging():
 # sq_block_sweep_hrs()
 # grid_varyflow()
 # grid_varyflow_charging()
-SOC_discharge_vary_mdot()
+# SOC_discharge_vary_mdot()
 # test_SOC_P_plots_discharge()
 # fastcharge_CS_mdot_SOC()
+fastcharge_CS_mdot_SOC_2()
 # test_SOC_P_plots_charge()
