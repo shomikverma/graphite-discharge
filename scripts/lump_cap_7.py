@@ -1709,7 +1709,7 @@ def fastcharge_CS_mdot_SOC():
 def fastcharge_CS_mdot_SOC_2():
     cp_Sn = 240
     df_data = pd.read_csv('data/COMSOL_5block_10_k_fastcharge_sweep_hours_ff.csv', names=[
-        'hours', 'max_ff', 'time', 'inlet_T', 'outlet_T', 'mass_flow'], skiprows=5)
+        'hours', 'max_ff', 'time', 'inlet_T', 'outlet_T', 'mass_flow'], skiprows=1)
     _, _, energy_max = energy_from_flowrate_hours(df_data['mass_flow'][0], df_data['hours'][0])
     SOCs = []
     powers = []
