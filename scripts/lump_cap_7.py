@@ -1512,7 +1512,7 @@ def plot_normalized_time():
     plt.legend()
     plt.title('tin outlet temperature')
     plt.xlabel('$t^* = \\frac{t}{\\tau}$')
-    plt.ylabel('$\\Theta = \\frac{T-T_{min}}{T_{max}-T_{min}}$')
+    plt.ylabel('$\\Theta = \\frac{T-T_{min}}{T_{max}-T_{min}} or \\frac{T_{max}-T}{T_{max}-T_{min}}$')
     plt.tight_layout()
     # plt.grid()
     plt.savefig('../plots/ideal_vs_realistic_tin_outlet.pdf')
@@ -1633,9 +1633,9 @@ def fastcharge_CS_mdot():
                 P_FOMS.append(P_FOM)
                 fig = plt.figure(num=1, figsize=(5, 4), clear=True)
                 ax = fig.add_subplot(221)
-                plt.plot(df_data['time'], df_data['bottom_right_T'])
+                plt.plot(df_data['time'], df_data['bottom_right_T']-273)
                 plt.xlabel('time (hr)')
-                plt.ylabel('T (K)')
+                plt.ylabel('T ($^\circ$C)')
                 # plt.grid()
                 plt.title('k = 10, hours = %0.1f, max$_{ff}$ = %0.1f' % (hours, max_ff))
                 plt.tight_layout()
@@ -1649,7 +1649,7 @@ def fastcharge_CS_mdot():
                 ax = fig.add_subplot(223)
                 plt.plot(df_data['time'], Poutnp)
                 plt.plot(df_data['time'], np.ones(len(df_data['time']))*nom_flow*500*cp_Sn)
-                plt.annotate('FOM$_P$ = %0.2f' % P_FOM, (0.5, 0.7), xycoords='axes fraction')
+                plt.annotate('FOM$_{P,charge}$ = %0.2f' % P_FOM, (0.3, 0.7), xycoords='axes fraction')
                 plt.xlabel('time (hr)')
                 plt.ylabel('Power (W)')
                 # plt.grid()
@@ -1820,7 +1820,10 @@ def fastcharge_CS_Tin():
                     continue
                 print(base_Tadd, max_Tadd)
                 # df_data = df[df['base_Tadd'] == base_Tadd and df['max_Tadd'] == max_Tadd]
+                df_data_100 = df[(df['base_Tadd'] == 100) & (df['max_Tadd'] == 100) & (df['hours'] == hours)]
                 df_data = df[(df['base_Tadd'] == base_Tadd) & (df['max_Tadd'] == max_Tadd) & (df['hours'] == hours)]
+                df_data = df_data[df_data['time'] > 0.01]
+                df_data_100 = df_data_100[df_data_100['time'] > 0.01]
                 print(df_data['mass_flow'].min(), df_data['mass_flow'].max())
                 delT = np.abs(df_data['outlet_T'] - df_data['inlet_T'])
                 Pout = df_data['mass_flow']*delT*cp_Sn
@@ -1833,8 +1836,8 @@ def fastcharge_CS_Tin():
                 fig = plt.figure(num=index, figsize=(7.5, 2), clear=True)
                 index += 1
                 ax = fig.add_subplot(131)
-                plt.plot(df_data['time'], df_data['outlet_T'], label='outlet')
-                plt.plot(df_data['time'], df_data['inlet_T'], label='inlet')
+                plt.plot(df_data['time'], df_data['outlet_T']-273, label='outlet')
+                plt.plot(df_data['time'], df_data['inlet_T']-273, label='inlet')
                 # plt.plot(df_data['time'], df_data['bottom_right_T'])
                 plt.legend(loc='center left')
                 T_FOM = df_data['bottom_right_T'].values[-1] / (2400+273)
@@ -1842,21 +1845,21 @@ def fastcharge_CS_Tin():
                 P_FOMS.append(P_FOM)
                 # plt.annotate('T FOM = %0.2f' % T_FOM, (0.1, 0.8), xycoords='axes fraction')
                 plt.xlabel('time (hr)')
-                plt.ylabel('T (K)')
+                plt.ylabel('T ($^\circ$C)')
                 # plt.grid()
                 # plt.title('k = 10, hours = %0.1f, base$_{Tadd}$ = %0.1f, max$_{Tadd}$ = %0.1f' % (hours, base_Tadd, max_Tadd))
                 plt.tight_layout()
                 ax = fig.add_subplot(132)
-                plt.plot(df_data['time'], df_data['bottom_right_T'])
+                plt.plot(df_data['time'], df_data_100['bottom_right_T']-273)
                 # plt.ylim(0, 20)
                 # plt.grid()
                 plt.xlabel('time (hr)')
-                plt.ylabel('bottom graphite T (K)')
+                plt.ylabel('bottom graphite T ($^\circ$C)')
                 plt.tight_layout()
                 ax = fig.add_subplot(133)
                 plt.plot(df_data['time'], Poutnp)
                 plt.plot(df_data['time'], np.ones(len(df_data['time']))*nom_flow*500*cp_Sn)
-                plt.annotate('P FOM = %0.2f' % P_FOM, (0.1, 0.1), xycoords='axes fraction')
+                plt.annotate('FOM$_{P,charge}$ = %0.2f' % P_FOM, (0.1, 0.1), xycoords='axes fraction')
                 plt.xlabel('time (hr)')
                 plt.ylabel('Power (W)')
                 # plt.grid()
@@ -1871,8 +1874,8 @@ def fastcharge_CS_Tin():
         plt.plot(base_Tadds, np.ones_like(base_Tadds), 'k--')
         plt.plot(base_Tadds, np.ones_like(base_Tadds)*0, 'k--')
         plt.title('hours = %0.1f' % hours)
-        plt.xlabel('added T (K)')
-        plt.ylabel('P FOM')
+        plt.xlabel('added T ($^\circ$C)')
+        plt.ylabel('FOM$_{P,charge}$')
         # plt.grid()
         plt.tight_layout()
         # plt.colorbar(label='P FOM')
@@ -1935,7 +1938,7 @@ def fastcharge_CS_rad():
     plt.plot(rad_spaces, P_FOMs)
     # plt.plot(rad_spaces, T_FOMs, label='T')
     plt.xlabel('Gap size (m)')
-    plt.ylabel('P FOM')
+    plt.ylabel('FOM$_{P,charge}$')
     # plt.legend()
     # plt.grid()
     plt.tight_layout()
@@ -2008,7 +2011,7 @@ def vary_mdot_const_P_CS():
             ax = fig.add_subplot(221)
             plt.plot(df['time'], delT)
             plt.xlabel('time (hr)')
-            plt.ylabel('delta T (K)')
+            plt.ylabel('delta T ($^{\circ}$C)')
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(222)
@@ -2038,7 +2041,7 @@ def vary_mdot_const_P_CS():
     plt.contourf(all_max_ff, all_hours, np.array(P_FOMs).reshape(len(all_hours), len(all_max_ff)), 100)
     plt.ylabel('hours')
     plt.xlabel('max flow factor')
-    plt.colorbar(label='FOM$_P$')
+    plt.colorbar(label='FOM$_{P,discharge}$')
     plt.contour(all_max_ff, all_hours, np.array(P_FOMs).reshape(
         len(all_hours), len(all_max_ff)),  levels=[0.9], colors='k')
     plt.tight_layout()
@@ -2170,6 +2173,20 @@ def energy_from_flowrate_hours(mdot, hours):
     # print('scaled mdot_Sn: {:.6f} kg/s'.format(scaled_mdot_Sn))
     return energy, num_blocks, energy_1_block
 
+def energy_100_blocks():
+    delT = 500
+    V_block = 4
+    rho_C = 1700
+    cp_C = 2000
+    energy_100_blocks = (V_block * rho_C * cp_C * delT)*100
+    print(energy_100_blocks)
+    energy_100_blocks_MWh = energy_100_blocks / 3600e6
+    print(energy_100_blocks_MWh)
+    # series_blocks = 5
+    # scaling_factor = series_blocks / num_blocks
+    # scaled_mdot_Sn = mdot_Sn * scaling_factor
+    # print('scaled mdot_Sn: {:.6f} kg/s'.format(scaled_mdot_Sn))
+
 
 def calc_view_factor(R1, R2, H):
     A1 = 2*np.pi*R1*H
@@ -2214,6 +2231,7 @@ def sweep_total_resistance():
     # print(R_o[0])
     # print(0.1)
     V_perc_inc = (R_o**2 - 0.1**2)/0.1**2*100
+    SA_perc_inc = (R_o - 0.1)/0.1*100
     R_cond_2 = np.log(R_o/(R_Sn+R_C+R_gap))/(2*np.pi*2*k_C)
     R_rad = 1/(1*5.67e-8*(2673**2 + 2173**2)*(2673+2173)*2*np.pi *
                (R_Sn+R_C)*H*calc_view_factor(R_Sn+R_C, R_Sn+R_C+R_gap, H))
@@ -2235,8 +2253,10 @@ def sweep_total_resistance():
 
     plt.figure(num=2, clear=True)
     plt.xlabel('Gap size (m)')
-    plt.plot(R_gap, V_perc_inc, 'r')
-    plt.ylabel('$\%$ increase in volume')
+    plt.plot(R_gap, V_perc_inc, 'r', label='volume')
+    plt.plot(R_gap, SA_perc_inc, 'b', label='surface area')
+    plt.legend()
+    plt.ylabel('$\%$ increase')
     plt.tight_layout()
     plt.savefig('../plots/Rgap_vs_size.pdf')
 
@@ -2415,24 +2435,24 @@ def sq_block_sweep_hrs():
     # plt.ylabel('outlet T (K)')
     # plt.tight_layout()
     # plt.savefig('../plots/COMSOL_5block_10_k_sqblock_porous_rad_PBC_comp.png')
-    plt.figure(num=3, clear=True, figsize=(2.5, 2.5))
+    plt.figure(num=3, clear=True, figsize=(3, 4.5))
     hours = 20
     df_pm3['time'] = df_pm3['time'] / 3600
     df_pm4['time'] = df_pm4['time'] / 3600
     df_pm5['time'] = df_pm5['time'] / 3600
     df_pm6['time'] = df_pm6['time'] / 3600
     df_pm7['time'] = df_pm7['time'] / 3600
-    plt.plot(df_pm3['time'], df_pm3['outlet_T'], label='(1) 1x100 vertical blocks'.format(hours))
-    plt.plot(df_pm4['time'], df_pm4['outlet_T'], label='(2) 1x100 string of blocks'.format(hours))
-    plt.plot(df_pm5['time'], df_pm5['outlet_T'], label='(3) 10x10 grid, all series'.format(hours))
-    plt.plot(df_pm6['time'], df_pm6['outlet_T'], label='(4) 10x10 grid, 10 parallel paths'.format(hours))
-    plt.plot(df_pm7['time'], df_pm7['outlet_T'], label='(5) 10x10 grid, 100 parallel paths'.format(hours))
+    plt.plot(df_pm3['time'], df_pm3['outlet_T']-273, label='(1) 1x100 vertical blocks'.format(hours))
+    plt.plot(df_pm4['time'], df_pm4['outlet_T']-273, label='(2) 1x100 string of blocks'.format(hours))
+    plt.plot(df_pm5['time'], df_pm5['outlet_T']-273, label='(3) 10x10 grid, all series'.format(hours))
+    plt.plot(df_pm6['time'], df_pm6['outlet_T']-273, label='(4) 10x10 grid, 10 parallel paths'.format(hours))
+    plt.plot(df_pm7['time'], df_pm7['outlet_T']-273, label='(5) 10x10 grid, 100 parallel paths'.format(hours))
     # plt.plot(df_pm8['time'], df_pm8['outlet_T'], label='{} hrs rad 400m 10x10 wind'.format(hours))
     # put legend below figure
-    # plt.legend(loc='upper center', bbox_to_anchor=(0.45, -0.2))
+    plt.legend(loc='upper center', bbox_to_anchor=(0.45, -0.2))
     # plt.grid()
     plt.xlabel('time (hrs)')
-    plt.ylabel('outlet T (K)')
+    plt.ylabel('outlet T ($^\circ$C)')
     plt.tight_layout()
     plt.savefig('../plots/COMSOL_5block_10_k_sqblock_porous_rad_PBC_comp_configs.pdf')
     plt.show()
@@ -2512,7 +2532,7 @@ def grid_varyflow_charging():
 # sweep_both_norm()
 # sweep_both_norm_2()
 # compare_longblock()
-# plot_normalized_time()
+plot_normalized_time()
 # fastcharge_CS_mdot()
 # plot_normalized_time_CS_LC()
 # plot_nondim_time_CS()
@@ -2527,5 +2547,6 @@ def grid_varyflow_charging():
 # SOC_discharge_vary_mdot()
 # test_SOC_P_plots_discharge()
 # fastcharge_CS_mdot_SOC()
-fastcharge_CS_mdot_SOC_2()
+# fastcharge_CS_mdot_SOC_2()
+# energy_100_blocks()
 # test_SOC_P_plots_charge()
