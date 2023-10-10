@@ -1982,6 +1982,20 @@ def power_block_ODE_height(T_data, mdot_data):
     P_net = np.array([22.13450812, 25.29930801, 28.8144618, 32.70539011, 36.99823388, 41.71983159,
                       46.89769773, 52.56000227, 58.73555122, 65.45376811, 72.74467579])
     heat_flux_T = np.polyfit(Trad, P_net*100**2, 2)
+    heat_flux_T_linear = np.polyfit(Trad, P_net*100**2, 1)
+    # print(heat_flux_T_linear)
+    plotTPV = False
+    if plotTPV:
+        plt.figure(num=1, clear=True)
+        plt.plot(Trad-273, P_net, 'o')
+        plt.plot(Trad-273, np.polyval(heat_flux_T, Trad)/100**2)
+        plt.plot(Trad-273, np.polyval(heat_flux_T_linear, Trad)/100**2)
+        plt.xlabel('T$_{rad}$ ($^\circ$C)')
+        plt.ylabel('P$_{net}$ (W/cm$^2$)')
+        plt.tight_layout()
+        plt.savefig('../plots/TPV_P_dens.pdf')
+        plt.show()
+
     mdot = mdot_data
     # print(mdot, Tin, (1900+273))
     cp_Sn = 240
@@ -1998,7 +2012,7 @@ def power_block_ODE_height(T_data, mdot_data):
         except RuntimeWarning:
             val = 0
         return val
-    
+
     x_max = 100
     sol = solve_ivp(F, [0, x_max], [Tin], method='LSODA', t_eval=np.linspace(
         0, x_max, 10000), events=reached_outlet, dense_output=True)
@@ -2093,7 +2107,7 @@ def vary_mdot_const_P_CS():
 
 def SOC_discharge_vary_mdot():
     cp_Sn = 248
-    df_data = pd.read_csv('data/COMSOL_5block_10_k_discharge_sweep_log_maxflow_new.csv', names=[
+    df_data = pd.read_csv('data/COMSOL_5block_10_k_discharge_sweep_maxflow_derate_10hrs.csv', names=[
                           'hours', 'max_ff', 'time', 'inlet_T', 'outlet_T', 'block_T', 'Sn_T', 'bottom_right_T', 'mass_flow'], skiprows=5)
     energy_max, _, _ = energy_from_flowrate_hours(df_data['mass_flow'][0], df_data['hours'][0])
     SOCs = []
@@ -2103,6 +2117,8 @@ def SOC_discharge_vary_mdot():
     for hours in tqdm(df_data['hours'].unique()):
         for max_ff in df_data['max_ff'].unique():
             df_temp = df_data[df_data['hours'] == hours][df_data['max_ff'] == max_ff]
+            if len(df_temp) == 0:
+                continue
             power = df_temp['mass_flow']*cp_Sn*(df_temp['outlet_T']-df_temp['inlet_T'])
             energy = energy_max - cumtrapz(power, df_temp['time'], initial=0)
             SOC = energy/energy_max
@@ -2131,18 +2147,35 @@ def SOC_discharge_vary_mdot():
     df_data['power'] = powers
     df_data['TPV_height'] = P_heights_all
     df_data['TPV_density'] = P_densities
-    df_data.to_csv('data/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_new.csv', index=False)
+    df_data.to_csv('data/COMSOL_5block_10_k_discharge_sweep_maxflow_derate_10hrs_SOC.csv', index=False)
     pass
 
 
 def test_SOC_P_plots_discharge():
-    cp_Sn = 240
-    df_data = pd.read_csv('data/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC.csv', names=[
-                          'hours', 'max_ff', 'time', 'inlet_T', 'outlet_T', 'block_T', 'Sn_T', 'bottom_right_T', 'mass_flow', 'SOC', 'power'], skiprows=5)
+    df_data = pd.read_csv('data/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_new.csv')
+    hours = df_data['hours'].unique()
+    print(hours)
+    # df_data = df_data[df_data['hours'] == hours[0]]
+    max_ffs = df_data['max_ff'].unique()
+    print(max_ffs)
+    for f in max_ffs:
+        df_data_temp = df_data[abs(df_data['hours']-10*f) < 1]
+        print(df_data_temp.info())
+        df_data_temp = df_data_temp[df_data_temp['max_ff'] == f]
+        df_data_temp = df_data_temp.reset_index(drop=True)
+        plt.figure(5)
+        plt.plot(df_data_temp['SOC'], df_data_temp['power'], label='max ff = %0.1f' % f)
+    plt.figure(5)
+    plt.xlabel('SOC')
+    plt.ylabel('Power (W)')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('plots/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_P_derate_10hrs.pdf')
+    plt.show()
+
+    # return
+
     df_data = df_data[df_data['hours'] == df_data['hours'].unique()[6]]
-    fig = plt.figure(num=1, clear=True)
-    fig = plt.figure(num=2, clear=True)
-    fig = plt.figure(num=3, clear=True)
     df_maxff_1 = df_data[df_data['max_ff'] == 1.0]
     df_maxff_1 = df_maxff_1.reset_index(drop=True)
     df_maxff_1['delT'] = df_maxff_1['outlet_T'] - df_maxff_1['inlet_T']
@@ -2166,6 +2199,8 @@ def test_SOC_P_plots_discharge():
         plt.plot(df_temp['SOC'], df_temp['power'], label='max ff = %0.1f' % max_ff, color=color)
         plt.figure(2)
         plt.plot(df_temp['SOC'], df_temp['delT'], label='max ff = %0.1f' % max_ff, color=color)
+        plt.figure(4)
+        plt.plot(df_temp['SOC'], df_temp['power']/max_ff, label='max ff = %0.1f' % max_ff, color=color)
     plt.figure(1)
     plt.xlabel('SOC')
     plt.ylabel('Power (W)')
@@ -2184,6 +2219,12 @@ def test_SOC_P_plots_discharge():
     plt.legend()
     plt.tight_layout()
     plt.savefig('plots/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_P_31hrs.pdf')
+    plt.figure(4)
+    plt.xlabel('SOC')
+    plt.ylabel('Power (W)')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig('plots/COMSOL_5block_10_k_discharge_sweep_log_maxflow_SOC_P_derate_31hrs.pdf')
     plt.show()
     pass
 
@@ -2586,3 +2627,10 @@ SOC_discharge_vary_mdot()
 # fastcharge_CS_mdot_SOC_test()
 # energy_100_blocks()
 # test_SOC_P_plots_charge()
+
+# nominal_flowrate = 1
+# derated_flowrate = 0.5
+# max_ff = 1000
+# print(power_block_ODE_height(1900+273+500, nominal_flowrate))
+# print(power_block_ODE_height(1900+273+500, derated_flowrate))
+# print(power_block_ODE_height(1900+273+500/max_ff, max_ff*derated_flowrate))
