@@ -2107,7 +2107,7 @@ def vary_mdot_const_P_CS():
 
 def SOC_discharge_vary_mdot():
     cp_Sn = 248
-    df_data = pd.read_csv('data/COMSOL_5block_10_k_discharge_sweep_maxflow_new.csv', names=[
+    df_data = pd.read_csv('data/COMSOL_5block_10_k_discharge_sweep_hours_new.csv', names=[
                           'hours', 'max_ff', 'time', 'inlet_T', 'outlet_T', 'block_T', 'Sn_T', 'bottom_right_T', 'mass_flow'], skiprows=5)
     energy_max, _, _ = energy_from_flowrate_hours(df_data['mass_flow'][0], df_data['hours'][0])
     SOCs = []
@@ -2147,7 +2147,7 @@ def SOC_discharge_vary_mdot():
     df_data['power'] = powers
     df_data['TPV_height'] = P_heights_all
     df_data['TPV_density'] = P_densities
-    df_data.to_csv('data/COMSOL_5block_10_k_discharge_sweep_maxflow_new_SOC.csv', index=False)
+    df_data.to_csv('data/COMSOL_5block_10_k_discharge_sweep_hours_new_SOC.csv', index=False)
     pass
 
 
