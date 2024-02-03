@@ -1443,6 +1443,9 @@ def opt_H_D_from_hours_k(hours,k):
     data = []
     H_sweep = np.linspace(1e-5,100,100)
     D_sweep = np.linspace(1e-5,1,100)
+    # print(H_sweep)
+    # print(D_sweep)
+    # exit()
     for H in H_sweep:
         for D in D_sweep:
             U = U_from_H_hours(H, hours)
@@ -1471,11 +1474,15 @@ def opt_H_D_from_hours_k(hours,k):
     # ax.tick_params(zorder=10)
     plt.xlim(0, max(D_sweep))
     plt.ylim(0, max(H_sweep))
-    plt.title('%0.0f hours, k=%0.0f' % (hours, k))
+    plt.title('$\\tau$=%0.0f hours, k=%0.0f W/m/K' % (hours, k))
     # cbaxes = fig.add_axes([1, 0.15, 0.03, 0.7])
     plt.grid(axis='both')
     plt.colorbar(label='$FOM_T$', ax=ax, pad=0.25)
     plt.contour(D, H, FOM, levels=[0.9], colors='k')
+    idx = 5
+    idx_D = 11
+    plt.hlines(idx, 0, 1, 'b', linestyles='dashed')
+    plt.vlines(idx_D/100, 0, 100, 'r', linestyles='dashed')
     plt.tight_layout()
     
     ax2 = ax.twinx()
@@ -1495,6 +1502,32 @@ def opt_H_D_from_hours_k(hours,k):
     for c in ctf.collections:
         c.set_edgecolor("face")
     plt.savefig('../plots/opt_H_D_from_hours_k_%0.0f_%0.0f.pdf' % (hours, k))
+
+    fig = plt.figure(num=17, figsize=(3,3), clear=True)
+    
+    df_10 = df[df['H']==H_sweep[idx]]
+    plt.plot(df_10['D'], df_10['FOM'],'b--')
+    plt.hlines(0.9, -1, 2, 'k')
+    plt.xlabel('D (m)')
+    plt.ylabel('$FOM_T$')
+    plt.ylim(0.5,1)
+    plt.xlim(0,1)
+    plt.title('FOM$_T$ vs. D for L = %0.0f m' % idx)
+    plt.tight_layout()
+    plt.savefig('../plots/opt_H_D_from_hours_k_%0.0f_%0.0f_2.pdf' % (hours, k))
+
+    df_02 = df[df['D']==D_sweep[idx_D]]
+    plt.figure(num=18, figsize=(3,3), clear=True)
+    plt.plot(df_02['H'], df_02['FOM'],'r',linestyle='dashed')
+    plt.hlines(0.9, -1, 101, 'k')
+    plt.xlabel('L (m)')
+    plt.ylabel('$FOM_T$')
+    plt.ylim(0,1)
+    plt.xlim(0,50)
+    plt.title('FOM$_T$ vs. L for D = %0.1f m' % (idx_D/100))
+    plt.tight_layout()
+    plt.savefig('../plots/opt_H_D_from_hours_k_%0.0f_%0.0f_3.pdf' % (hours, k))
+
     pass
 
 # data = import_data()
@@ -1531,10 +1564,10 @@ krr = KRR_interp_HD_UDk_k()
 # plt.show()
 # krr2, krr3 = KRR_interp_HD_UDk_k_2()
 # plt.show()
-opt_H_D_from_hours_k(5, 10)
+opt_H_D_from_hours_k(100, 1)
 plt.show()
-opt_H_D_from_hours_k(3, 10)
-plt.show()
+# opt_H_D_from_hours_k(10, 10)
+# plt.show()
 # opt_H_D_from_hours_k(5, 10)
 # plt.show()
 # opt_H_D_from_hours_k(4, 10)
