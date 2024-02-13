@@ -1454,6 +1454,36 @@ def compare_longblock():
     plt.show()
     pass
 
+def storage_material():
+    df = pd.read_csv('../data/TES_materials.csv')
+    df.columns=['material','cost','energy_density','form','mp','bp']
+    # if df['mp'] < 1200, change df['form'] to gas
+    df['form'] = np.where(df['bp'] < 1200, 'gas', df['form'])
+    df_solid = df[df['form'] == 'solid']
+    df_liquid = df[df['form'] == 'liquid']
+    df_PCM = df[df['form'] == 'PCM']
+    df_gas = df[df['form'] == 'gas']
+    print(df.info())
+    plt.figure(num=1, clear=True)
+    # plt.loglog(df['cost'], df['energy_density'], 'o')
+    plt.loglog(df_gas['cost'], df_gas['energy_density'], 'bs', alpha=0.25, markeredgewidth=0)
+    plt.loglog(df_solid['cost'], df_solid['energy_density'], 'rs', label='solid')
+    plt.loglog(df_liquid['cost'], df_liquid['energy_density'], 'bs', label='liquid')
+    plt.loglog(df_PCM['cost'], df_PCM['energy_density'], 'gs', label='PCM')
+    plt.legend(fontsize=8)
+    # for i, txt in enumerate(df['material']):
+    #     plt.annotate(txt, (df['cost'][i], df['energy_density'][i]), fontsize=8, textcoords='offset points', xytext=(-2,-7))
+    plt.xlabel('cost (\$/kWh-th)')
+    plt.ylabel('energy density (kWh-th/m$^3$)')
+    plt.xticks([1e-1, 1e0, 1e1, 1e2, 1e3, 1e4], ['10$^{-1}$', '10$^{0}$', '10$^{1}$', '10$^{2}$', '10$^{3}$', '10$^{4}$'])
+    plt.xlim(0.5e-1, 1e5)
+    plt.ylim(0.7e2, 1.5e3)
+    # leg = plt.legend()
+    # leg.get_frame().set_edgecolor('k')
+    plt.tight_layout()
+    plt.savefig('../plots/storage_materials.pdf')
+
+    plt.show()
 
 def plot_normalized_time():
     # hours = np.append([1, 5], np.arange(10, 60, 10))
@@ -1506,11 +1536,11 @@ def plot_normalized_time():
     for row in df_all.iterrows():
         # plt.plot(row[1]['time'], (row[1]['outlet_T_5']-2173)/500, label='%0.0f' % row[1]['Pe'],
         #         color=cmap((np.log(row[1]['Pe']) - np.log(min(Pes)))/(np.log(max(Pes))-np.log(min(Pes)))*0.9))
-        plt.plot(row[1]['time']*1.05, ((row[1]['outlet_T_5']-273)-1900)/500, label='k = %0.0f' % row[1]['Pe'],
+        plt.plot(row[1]['time']*1.05, ((row[1]['outlet_T_5']-273)-1900)/500, label='k = %0.0f $\\frac{W}{mK}$' % row[1]['Pe'],
                  color=cmap(np.sqrt(row[1]['Pe'])/np.sqrt(max(Pes))*0.9))
 
-    plt.legend()
-    plt.title('non-dimensionalized tin outlet temperature')
+    # plt.legend()
+    # plt.title('non-dimensionalized tin outlet temperature')
     plt.xlabel('$t^*$')
     plt.ylabel('$\\Theta^* $')
     plt.tight_layout()
@@ -2108,17 +2138,19 @@ def vary_mdot_const_P_CS():
                 heights_add_30.append(add_height_perc)
             fig = plt.figure(num=index, clear=True, figsize=(5, 4))
             index += 1
-            fig.suptitle('hours = %0.1f, max$_{ff}$ = %0.1f' % (hours, max_ff))
+            # fig.suptitle('hours = %0.1f, max$_{ff}$ = %0.1f' % (hours, max_ff))
             ax = fig.add_subplot(221)
             plt.plot(df['time'], delT,'b')
             plt.xlabel('time (hr)')
             plt.ylabel('delta T ($^{\circ}$C)')
+            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(222)
             plt.plot(df['time'], df['mass_flow'],'b')
             plt.xlabel('time (hr)')
             plt.ylabel('mass flow (kg/s)')
+            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(223)
@@ -2126,12 +2158,14 @@ def vary_mdot_const_P_CS():
             plt.plot(df['time'], Pout*0.4,'r', label='Electrical')
             plt.xlabel('time (hr)')
             plt.ylabel('Power (W)')
+            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(224)
-            plt.plot(df['time'], P_heights,'b')
+            plt.plot(df['time'], P_heights,'r')
             plt.xlabel('time (hr)')
             plt.ylabel('TPV area (norm)')
+            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             plt.savefig('../plots/COMSOL_5block_10_k_discharge_sweep_maxflow_%0.1f_%0.1f.png' %
@@ -2345,7 +2379,8 @@ def vary_mdot_const_P_CS_charge():
         
         ax1.plot(df['time'], np.abs(df['outlet_T']-df['inlet_T']), c=colors[index], label='f=%1.0f' % max_ff)
         # plt.ylim(0,500)
-        ax1.legend()
+        # ax1.legend()
+        ax1.set_title(r'$\tau$ = %0.1f hours' % hours)
         ax1.set_xlim(0,10)
         ax1.set_xlabel('time (hr)')
         ax1.set_ylabel('delta T ($^{\circ}$C)')
@@ -2353,6 +2388,7 @@ def vary_mdot_const_P_CS_charge():
 
         ax4.plot(df['time'], 2400-(df['bottom_right_T']-2173),c=colors[index], label='f=%1.0f' % max_ff)
         # plt.ylim(1900,2400)
+        ax4.set_title(r'$\tau$ = %0.1f hours' % hours)
         ax4.set_xlim(0,10)
         ax4.set_xlabel('time (hr)')
         ax4.set_ylabel('TPV T ($^{\circ}$C)')
@@ -2360,6 +2396,7 @@ def vary_mdot_const_P_CS_charge():
         # ax4.tight_layout()
         
         ax2.plot(df['time'], df['mass_flow'],c=colors[index], label='f=%1.0f' % max_ff)
+        ax2.set_title(r'$\tau$ = %0.1f hours' % hours)
         ax2.set_xlim(0,10)
         ax2.set_xlabel('time (hr)')
         ax2.set_ylabel('mass flow (kg/s)')
@@ -2368,6 +2405,7 @@ def vary_mdot_const_P_CS_charge():
         
         ax3.plot(df['time'], Pout/1000,c=colors[index], label='f=%1.0f' % max_ff)
         ax3.set_xlim(0,10)
+        ax3.set_title(r'$\tau$ = %0.1f hours' % hours)
         # plt.plot(df['time'], Pout/0.99,'r', label='Electrical')
         ax3.set_xlabel('time (hr)')
         ax3.set_ylabel('Power input (kW)')
@@ -2834,11 +2872,11 @@ def sq_block_sweep_hrs():
     df_pm5['time'] = df_pm5['time'] / 3600
     df_pm6['time'] = df_pm6['time'] / 3600
     df_pm7['time'] = df_pm7['time'] / 3600
-    plt.plot(df_pm3['time'], df_pm3['outlet_T']-273, c = cs[0], label='(1) 1x100 vertical blocks'.format(hours))
-    plt.plot(df_pm4['time'], df_pm4['outlet_T']-273, c = cs[1],label='(2) 1x100 string of blocks'.format(hours))
-    plt.plot(df_pm5['time'], df_pm5['outlet_T']-273, c = cs[2], label='(3) 10x10 grid, all series'.format(hours))
-    plt.plot(df_pm6['time'], df_pm6['outlet_T']-273, c = cs[3],label='(4) 10x10 grid, 10 parallel paths'.format(hours))
-    plt.plot(df_pm7['time'], df_pm7['outlet_T']-273, c = cs[4],label='(5) 10x10 grid, 100 parallel paths'.format(hours))
+    plt.plot(df_pm3['time'], df_pm3['outlet_T']-273, c = cs[0], label='Conf. 1: 1x100 vertical blocks'.format(hours))
+    plt.plot(df_pm4['time'], df_pm4['outlet_T']-273, c = cs[1],label='Conf. 2: 1x100 string of blocks'.format(hours))
+    plt.plot(df_pm5['time'], df_pm5['outlet_T']-273, c = cs[2], label='Conf. 3: 10x10 grid, all series'.format(hours))
+    plt.plot(df_pm6['time'], df_pm6['outlet_T']-273, c = cs[3],label='Conf. 4: 10x10 grid, 10 parallel paths'.format(hours))
+    plt.plot(df_pm7['time'], df_pm7['outlet_T']-273, c = cs[4],label='Conf. 5: 10x10 grid, 100 parallel paths'.format(hours))
     # plt.plot(df_5['time'], df_5['P_out'], c = cs[3],label='(4) 10x10 grid, 10 parallel paths, 5x max flow')
     # plt.plot(df_pm8['time'], df_pm8['outlet_T'], label='{} hrs rad 400m 10x10 wind'.format(hours))
     # put legend below figure
@@ -2934,10 +2972,17 @@ def grid_varyflow():
     df_pm4 = pd.read_csv('../data/COMSOL_5block_10_k_porousmedia_coarse_rad_horizstring.csv', names=[
                          'hours', 'time', 'inlet_T', 'outlet_T', 'block_T', 'inlet_T_2', 'outlet_T_2', 'inlet_T_3', 'outlet_T_3', 'block2_T', 'block3_T', 'block4_T'], skiprows=5)
     df_5 = df[df.max_flowrate_factor == 5]
+    df_3 = df[df.max_flowrate_factor == 3]
     df_10 = df[df.max_flowrate_factor == 10]
     df_5['time'] = df_5['time'] / 3600
     df_5['P_out'] = df_5['P_out']/1e6
+    df_3['time'] = df_3['time'] / 3600
+    df_3['P_out'] = df_3['P_out']/1e6
+    df_1_25 = df[df.max_flowrate_factor == 1.25]
+    df_1_25['time'] = df_1_25['time'] / 3600
+    df_1_25['P_out'] = df_1_25['P_out']/1e6
     df_10['time'] = df_10['time'] / 3600
+    df_10['P_out'] = df_10['P_out']/1e6
     df_pm4['time'] = df_pm4['time'] / 3600
     df_pm4['mass_flowrate'] = df_5['mass_flowrate'].values[0]
     df_pm4['P_out'] = (df_pm4['outlet_T'] - df_pm4['inlet_T'])*df_pm4['mass_flowrate']*cp_Sn
@@ -2951,15 +2996,48 @@ def grid_varyflow():
     plt.figure(num=1, clear=True, figsize=(4, 3))
     # get default colors from matplotlib
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    plt.plot(df_pm5['time'], df_pm5['P_out'], label='10x10 grid (10 paths), 1x max flow', color=colors[3], linestyle='--')
-    plt.plot(df_pm4['time'], df_pm4['P_out'], label='1x100 string, 1x max flow', color=colors[1])
-    plt.plot(df_5['time'], df_5['P_out'], label='10x10 grid (10 paths), 5x max flow', color=colors[3])
+    plt.plot(df_pm4['time'], df_pm4['P_out'], label='Conf 2: f = 1', color='k', linestyle='dashed')
+    plt.plot(df_pm5['time'], df_pm5['P_out'], label='Conf 4: f = 1')
+    plt.plot(df_1_25['time'], df_1_25['P_out'], label='Conf 4: f = 1.25')
+    plt.plot(df_3['time'], df_3['P_out'], label='Conf 4: f = 3')
+    plt.plot(df_5['time'], df_5['P_out'], label='Conf 4: f = 5')
+    plt.plot(df_10['time'], df_10['P_out'], label='Conf 4: f = 10')
     plt.xlabel('time (hrs)')
     plt.ylabel('Power (MW)')
-    plt.legend(loc='lower left')
+    # plt.legend(loc='lower left')
     plt.tight_layout()
     plt.savefig('../plots/COMSOL_5block_10_k_sqblock_porous_rad_PBC_comp_10x10_varyflow.pdf')
+
+    hours = 20
+    FOM_P = []
+    Pout = np.abs(df_pm5['P_out'])
+    max_Pout_1 = max(Pout)
+    max_Pout_1_index = Pout[np.abs(Pout-max_Pout_1) < 100/1e6].index[-1]
+    max_Pout_1_time = df_pm5.loc[max_Pout_1_index, 'time']
+    FOM_P_1 = max_Pout_1_time / hours
+    FOM_P.append(FOM_P_1)
+    for max_ffs in sorted(df.max_flowrate_factor.unique()):
+        df2 = df[df.max_flowrate_factor == max_ffs]
+        df2['time'] = df2['time'] / 3600
+        Pout = np.abs(df2['P_out'])
+        max_Pout = max(Pout)
+        max_Pout_index = Pout[np.abs(Pout-max_Pout) < 10].index[-1]
+        max_Pout_time = df2.loc[max_Pout_index, 'time']
+        P_FOM = max_Pout_time / hours
+        FOM_P.append(P_FOM)
+    ffs = np.array(sorted(df.max_flowrate_factor.unique()))
+    ffs = np.append(1, ffs)
+    plt.figure(num=2, clear=True, figsize=(4, 3))
+    plt.plot(ffs, FOM_P, color=colors[3],label='Conf. 4')
+    plt.hlines([0,1], 1, 10, linestyles='dashed', colors='k')
+    plt.xlabel('flow multiplier')
+    plt.ylabel('FOM$_{P,discharge}$')
+    plt.legend(loc='right')
+    plt.tight_layout()
+    plt.savefig('../plots/COMSOL_5block_10_k_sqblock_porous_rad_PBC_comp_10x10_varyflow_FOM.pdf')
     plt.show()
+    print(max_Pout_1, max_Pout_1_index, max_Pout_1_time, FOM_P_1)
+
 
 
 def grid_varyflow_charging():
@@ -2981,13 +3059,28 @@ def grid_varyflow_charging():
         P_FOMs.append(P_FOM)
     plt.figure(num=2, clear=True, figsize=(4, 3))
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    plt.plot(base_max_flows, P_FOMs, c = colors[3], label='10x10 grid (10 paths)')
+    plt.plot(base_max_flows, P_FOMs, c = colors[3],label='Conf. 4')
     plt.hlines([0,1], 1, 10, linestyles='dashed', colors='k')
     plt.xlabel('flow multiplier')
     plt.ylabel('FOM$_{P,charge}$')
     plt.legend(loc='right')
     plt.tight_layout()
     plt.savefig('../plots/COMSOL_5block_10_k_sqblock_porous_rad_PBC_comp_10x10_rampflow_charging.pdf')
+    # plt.show()
+
+    plt.figure(num=3, clear=True)
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    print(df.info())
+    df['time'] = df['time'] / 3600
+    df['Pout'] = np.abs(df['P_out']/1e6)
+    for base_max_flow in base_max_flows:
+        df_data = df[df['max_flowrate_factor'] == base_max_flow]
+        plt.plot(df_data['time'], df_data['Pout'], label='Conf. 4: f = {}'.format(base_max_flow))
+    plt.xlabel('time (hrs)')
+    plt.ylabel('Power (MW)')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
+    plt.tight_layout()
+    plt.savefig('../plots/COMSOL_5block_10_k_sqblock_porous_rad_PBC_comp_10x10_rampflow_charging_P.pdf')
     plt.show()
 
 
@@ -3007,6 +3100,8 @@ def grid_varyflow_charging():
 # sweep_both_norm()
 # sweep_both_norm_2()
 # compare_longblock()
+    
+storage_material()
 # plot_normalized_time()
 # fastcharge_CS_mdot()
 # fastcharge_CS_mdot_SOC_2()
@@ -3019,10 +3114,10 @@ def grid_varyflow_charging():
 # sweep_total_resistance()
 # fastcharge_CS_rad()
 # charge_discharge_CS()
-sq_block_sweep_hrs()
-sq_block_charging()
-grid_varyflow()
-grid_varyflow_charging()
+# sq_block_sweep_hrs()
+# sq_block_charging()
+# grid_varyflow()
+# grid_varyflow_charging()
 # SOC_discharge_vary_mdot()
 # test_SOC_P_plots_discharge()
 # fastcharge_CS_mdot_SOC()
