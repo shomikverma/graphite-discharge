@@ -2113,17 +2113,28 @@ def vary_mdot_const_P_CS():
         for max_ff in tqdm(np.array(sorted(df_data['max_ff'].unique()))):
             df = df_data[df_data['hours'] == hours]
             df = df[df['max_ff'] == max_ff]
+            df_1 = df_data[df_data['hours'] == hours]
+            df_1 = df_1[df_1['max_ff'] == 1]
             df['time'] = df['time']/3600
+            df_1['time'] = df_1['time']/3600
             delT = df['outlet_T'] - df['inlet_T']
+            delT_1 = df_1['outlet_T'] - df_1['inlet_T']
             Pout = df['mass_flow']*delT*cp_Sn
+            Pout_1 = df_1['mass_flow']*delT_1*cp_Sn
             Poutnp = np.array(df['mass_flow']*delT*cp_Sn)
+            Poutnp_1 = np.array(df_1['mass_flow']*delT_1*cp_Sn)
             # find index of Pout near max Pout value
             max_Pout = max(Pout)
+            max_Pout_1 = max(Pout_1)
             max_Pout_index = Pout[np.abs(Pout-max_Pout) < 10].index[-1]
+            max_Pout_index_1 = Pout_1[np.abs(Pout_1-max_Pout_1) < 10].index[-1]
             max_Pout_time = df.loc[max_Pout_index, 'time']
+            max_Pout_time_1 = df_1.loc[max_Pout_index_1, 'time']
             P_FOM = max_Pout_time / hours
+            P_FOM_1 = max_Pout_time_1 / hours
             # P_FOM = np.trapz(Poutnp[df['time'] < hours], df['time'][df['time'] < hours]) / (Poutnp[0]*hours)
             P_heights = []
+            P_heights_1 = []
             for row in df.iterrows():
                 Tout = row[1]['outlet_T']
                 mdot = row[1]['mass_flow']
@@ -2132,6 +2143,12 @@ def vary_mdot_const_P_CS():
             P_heights = np.array(P_heights)/P_heights[0]
             add_height_perc = (max(P_heights)/P_heights[0] - 1)*100
             P_heights_add.append(add_height_perc)
+            for row in df_1.iterrows():
+                Tout = row[1]['outlet_T']
+                mdot = row[1]['mass_flow']
+                P_height = power_block_ODE_height(Tout, mdot)
+                P_heights_1.append(P_height)
+            P_heights_1 = np.array(P_heights_1)/P_heights_1[0]
             P_FOMs.append(P_FOM)
             if hours == all_hours[6]:
                 FOM_P_30.append(P_FOM)
@@ -2140,32 +2157,39 @@ def vary_mdot_const_P_CS():
             index += 1
             # fig.suptitle('hours = %0.1f, max$_{ff}$ = %0.1f' % (hours, max_ff))
             ax = fig.add_subplot(221)
-            plt.plot(df['time'], delT,'b')
+            plt.plot(df['time'], delT,'b', label='f = %0.1f' % max_ff)
+            plt.plot(df_1['time'], delT_1,'b--', label='f = 1')
             plt.xlabel('time (hr)')
             plt.ylabel('delta T ($^{\circ}$C)')
-            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
+            plt.legend(fontsize=8)
+            plt.title(r'$\tau$ = %0.1f hours' % (hours), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(222)
             plt.plot(df['time'], df['mass_flow'],'b')
+            plt.plot(df_1['time'], df_1['mass_flow'],'b--')
             plt.xlabel('time (hr)')
             plt.ylabel('mass flow (kg/s)')
-            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
+            plt.title(r'$\tau$ = %0.1f hours' % (hours), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(223)
             plt.plot(df['time'], Pout,'b', label='Thermal')
+            plt.plot(df_1['time'], Pout_1,'b--')
             plt.plot(df['time'], Pout*0.4,'r', label='Electrical')
+            plt.plot(df_1['time'], Pout_1*0.4,'r--')
             plt.xlabel('time (hr)')
             plt.ylabel('Power (W)')
-            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
+            plt.title(r'$\tau$ = %0.1f hours' % (hours), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             ax = fig.add_subplot(224)
-            plt.plot(df['time'], P_heights,'r')
+            plt.plot(df['time'], P_heights,'r', label='f = %0.1f' % max_ff)
+            plt.plot(df_1['time'], P_heights_1,'r--', label='f = 1')
             plt.xlabel('time (hr)')
             plt.ylabel('TPV area (norm)')
-            plt.title(r'$\tau$ = %0.1f hours, f = %0.1f' % (hours, max_ff), fontsize=10)
+            plt.legend(fontsize=8)
+            plt.title(r'$\tau$ = %0.1f hours' % (hours), fontsize=10)
             # plt.grid()
             plt.tight_layout()
             plt.savefig('../plots/COMSOL_5block_10_k_discharge_sweep_maxflow_%0.1f_%0.1f.png' %
@@ -2180,11 +2204,11 @@ def vary_mdot_const_P_CS():
     plt.colorbar(label='FOM$_{P,discharge}$')
     plt.contour(all_max_ff, all_hours, np.array(P_FOMs).reshape(
         len(all_hours), len(all_max_ff)),  levels=[0.9], colors='k')
-    plt.hlines(all_hours[6], 1, 10, 'b', linestyles='dashed')
+    plt.hlines(all_hours[6], 1, 10, 'purple')
     plt.tight_layout()
     ax = fig.add_subplot(122)
     plt.contourf(all_max_ff, all_hours, np.array(P_heights_add).reshape(len(all_hours), len(all_max_ff)), 100)
-    plt.hlines(all_hours[6], 1, 10, 'b', linestyles='dashed')
+    plt.hlines(all_hours[6], 1, 10, 'purple')
     plt.ylabel(r'storage duration ($\tau$, hr)')
     plt.xlabel('max flow factor ($f$)')
     plt.colorbar(label='TPV area added ($\%$)')
@@ -2195,14 +2219,14 @@ def vary_mdot_const_P_CS():
     # df_30 = df_data[df_data['hours'] == all_hours[6]]
     plt.figure(num=2,figsize=(2.5,2),clear=True)
     t_P_max = np.array(FOM_P_30)*all_hours[6]
-    plt.plot(all_max_ff, FOM_P_30,'b--')
+    plt.plot(all_max_ff, FOM_P_30,'purple')
     plt.xlabel('max flow factor ($f$)')
     plt.ylabel('FOM$_{P,discharge}$')
     plt.hlines(0.9,-5,11,'k')
     plt.ylim(0.3,1)
     plt.xlim(0,10)
     ax2 = plt.gca().twinx()
-    ax2.plot(all_max_ff, t_P_max, 'b--')
+    ax2.plot(all_max_ff, t_P_max, 'purple')
     ax2.set_ylabel('$t_{P,max}$, hr')
     plt.ylim(0.3*all_hours[6],all_hours[6])
     plt.grid()
@@ -2211,7 +2235,7 @@ def vary_mdot_const_P_CS():
     plt.savefig('../plots/COMSOL_5block_10_k_discharge_sweep_maxflow_FOM_P_%0.1f.pdf' % all_hours[6])
 
     plt.figure(num=3,figsize=(2.5,2),clear=True)
-    plt.plot(all_max_ff, heights_add_30,'b--')
+    plt.plot(all_max_ff, heights_add_30,'purple')
     plt.xlabel('max flow factor ($f$)')
     plt.ylabel('TPV area added ($\%$)')
     plt.ylim(0,100)
@@ -2334,7 +2358,7 @@ def vary_mdot_const_P_CS_charge():
     plt.contour(all_max_ff, all_hours, np.array(P_FOMs).reshape(
         len(all_hours), len(all_max_ff)),  levels=[0.9], colors='k')
     
-    plt.hlines(5, 1, 10, 'b', linestyles='dashed')
+    plt.hlines(5, 1, 10, 'purple', linestyles='dashed')
     plt.tight_layout()
     # ax = fig.add_subplot(122)
     # plt.contourf(all_max_ff, all_hours, np.array(P_heights_add).reshape(len(all_hours), len(all_max_ff)), 100)
@@ -2350,14 +2374,14 @@ def vary_mdot_const_P_CS_charge():
     # plt.figure(num=2,figsize=(2.5,2),clear=True)
     hours = 5
     df_5 = df_data_2[df_data_2['hours'] == hours]
-    # all_max_ff = np.array(sorted(df_5['max_ff'].unique()))
-    all_max_ff = np.array([1,5,10])
+    all_max_ff = np.array(sorted(df_5['max_ff'].unique()))
+    # all_max_ff = np.array([1,5,10])
     fig = plt.figure(figsize=(5,4),num=2)
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
     ax3 = fig.add_subplot(223)
     ax4 = fig.add_subplot(224)
-    colors = ['b','r','g']
+    colors = ['b','r','g','c','m','y','k','orange','purple','brown']
     for index, max_ff in tqdm(enumerate(all_max_ff)):
         df = df_5[df_5['max_ff'] == max_ff]
         df['time'] = df['time']/3600
@@ -2422,12 +2446,13 @@ def vary_mdot_const_P_CS_charge():
     plt.figure(figsize=(2.5,2))
     # t_P_max = np.array(FOM_P_5)*5
     
-    plt.plot(all_max_ff, FOM_P_5,'b--')
+    plt.plot(all_max_ff, FOM_P_5,'purple')
     plt.xlabel('max flow factor ($f$)')
     plt.ylabel('FOM$_{P,charge}$')
     plt.hlines(0.9,-5,11,'k')
     plt.ylim(0.3,1)
     plt.xlim(1,10)
+    plt.title(r'$\tau$ = 5.0 hours')
     # ax2 = plt.gca().twinx()
     # ax2.plot(all_max_ff, t_P_max, 'b--')
     # ax2.set_ylabel('$t_{P,max}$, hr')
@@ -3101,7 +3126,7 @@ def grid_varyflow_charging():
 # sweep_both_norm_2()
 # compare_longblock()
     
-storage_material()
+# storage_material()
 # plot_normalized_time()
 # fastcharge_CS_mdot()
 # fastcharge_CS_mdot_SOC_2()
@@ -3109,7 +3134,7 @@ storage_material()
 # plot_normalized_time_CS_LC()
 # plot_nondim_time_CS()
 # vary_mdot_const_P_CS()
-# vary_mdot_const_P_CS_charge()
+vary_mdot_const_P_CS_charge()
 # fastcharge_CS_Tin()
 # sweep_total_resistance()
 # fastcharge_CS_rad()

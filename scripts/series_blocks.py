@@ -1479,8 +1479,8 @@ def opt_H_D_from_hours_k(hours,k):
     plt.grid(axis='both')
     plt.colorbar(label='$FOM_T$', ax=ax, pad=0.25)
     plt.contour(D, H, FOM, levels=[0.9], colors='k')
-    idx = 5
-    idx_D = 11
+    idx = 10
+    idx_D = 20
     plt.hlines(idx, 0, 1, 'b', linestyles='dashed')
     plt.vlines(idx_D/100, 0, 100, 'r', linestyles='dashed')
     plt.tight_layout()
@@ -1506,7 +1506,7 @@ def opt_H_D_from_hours_k(hours,k):
     fig = plt.figure(num=17, figsize=(3,3), clear=True)
     
     df_10 = df[df['H']==H_sweep[idx]]
-    plt.plot(df_10['D'], df_10['FOM'],'b--')
+    plt.plot(df_10['D'], df_10['FOM'],'b')
     plt.hlines(0.9, -1, 2, 'k')
     plt.xlabel('D (m)')
     plt.ylabel('$FOM_T$')
@@ -1518,7 +1518,7 @@ def opt_H_D_from_hours_k(hours,k):
 
     df_02 = df[df['D']==D_sweep[idx_D]]
     plt.figure(num=18, figsize=(3,3), clear=True)
-    plt.plot(df_02['H'], df_02['FOM'],'r',linestyle='dashed')
+    plt.plot(df_02['H'], df_02['FOM'],'r')
     plt.hlines(0.9, -1, 101, 'k')
     plt.xlabel('L (m)')
     plt.ylabel('$FOM_T$')
@@ -1564,7 +1564,7 @@ krr = KRR_interp_HD_UDk_k()
 # plt.show()
 # krr2, krr3 = KRR_interp_HD_UDk_k_2()
 # plt.show()
-opt_H_D_from_hours_k(100, 1)
+opt_H_D_from_hours_k(30, 10)
 plt.show()
 # opt_H_D_from_hours_k(10, 10)
 # plt.show()
