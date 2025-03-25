@@ -240,6 +240,14 @@ def hours_from_H_U(H, U):
     hours = H/U*(rho_C/rho_Sn*99*Cp_C/Cp_Sn)/3600
     return hours    
 
+def hours_from_H_U_Ar(H, U):
+    rho_C = 1700
+    rho_Ar = 0.2
+    Cp_C = 2000
+    Cp_Ar = 520
+    hours = H/U*(rho_C/rho_Ar*99*Cp_C/Cp_Ar)/3600
+    return hours    
+
 def H_from_hours_U(hours, U):
     rho_C = 1700
     rho_Sn = 6164
@@ -584,13 +592,16 @@ def sweep_Pe_H_U_2():
 
 
 def sweep_HD_UDk_k():
+    k_Sn = 62
+    rho_C = 1700
+    cp_C = 2000
     # df = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
     # df2 = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10_30hrs.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
     # df3 = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10_highU.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
     # df4 = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10_highH.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
     df_all = pd.read_csv('../data/sweep_Pe_HD_UDk_k_all_new.csv', names=['UD/k', 'H/D', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
     # setk = 10
-    fig10 = plt.figure(num=10, clear=True, figsize=(25,2))
+    fig10 = plt.figure(num=10, clear=True, figsize=(5,12))
     # ax10 = fig10.add_subplot(111)
     
     for index, setk in enumerate(df_all['k'].unique()):
@@ -631,20 +642,24 @@ def sweep_HD_UDk_k():
         ax = fig.add_subplot(211)
         # ax = plt.axes(projection='3d')
         df = pd.DataFrame(data, columns=['H/D', 'UD/k', 'FOM','hours','Pe'])
-        U,H = np.meshgrid(sorted(U_D_k_unique), sorted(H_D_unique))
+        U_D_alpha_unique = U_D_k_unique * rho_C * cp_C
+        U,H = np.meshgrid(sorted(U_D_alpha_unique), sorted(H_D_unique))
         # plt.contourf(H/D, U*D, df['FOM'].values.reshape(len(H_D_unique), len(U_unique)), cmap='viridis')
         colormap = mpl.cm.get_cmap('tab10')
         plt.figure(num=10)
-        ax10 = fig10.add_subplot(1,5,index+1)
-        plt.contourf(U, H, df['FOM'].values.reshape(len(H_D_unique), len(U_D_k_unique)), levels=np.linspace(0,1,101), cmap='viridis')
+        ax10 = fig10.add_subplot(5,1,index+1)
+        cf = plt.contourf(U, H, df['FOM'].values.reshape(len(H_D_unique), len(U_D_k_unique)), levels=np.linspace(0,1,101), cmap='viridis')
+        for c in cf.collections:
+            c.set_edgecolor("face")
+            c.set_linewidth(0.000000000001)
         # plt.scatter(U*D/setk, H/D, df['FOM'].values.reshape(len(H_D_unique), len(U_unique)), cmap='viridis')
         ax10.set_yscale('log')
         ax10.set_xscale('log')
-        ax10.set_title('k = %0.0f' % setk, fontsize=20)
+        ax10.set_title('$k_s/k_f$ = %0.2f' % (setk/k_Sn), fontsize=15)
         plt.tight_layout()
         if setk == 10:
-            plt.ylabel('$\\dfrac{L}{D}$', rotation=0)
-            plt.colorbar(label = '$FOM_T$')
+            plt.ylabel('$\\dfrac{L}{D}$', rotation=0, fontsize=20, labelpad=10)
+            plt.colorbar().set_label('$FOM_T$', fontsize=20)
         else:
             plt.colorbar()
         # plt.colorbar()
@@ -653,8 +668,219 @@ def sweep_HD_UDk_k():
         # plt.scatter(df['U']*0.2, df['H']/0.2, c=df['FOM'])
         ax.set_yscale('log')
         ax.set_xscale('log')
-        plt.ylabel('$\\dfrac{L}{D}$', rotation=0)
-        plt.xlabel('$\\dfrac{UD}{k}$')
+        plt.ylabel('$\\dfrac{L}{D}$', rotation=0, fontsize=20)
+        plt.xlabel('$\\dfrac{UD}{\\alpha}$', fontsize=20)
+        # Hs = np.linspace(min(df['H/D'].unique()), max(df['H/D'].unique()), 100)
+        # Hs = np.linspace(min(df['H'].unique()), max(df['H'].unique()), 100)
+        Hs = np.linspace(0.1, 100, 100)
+        # plt.plot(UD_from_H_hours(Hs, 1, D)/setk, Hs/D, label='1 hour, D=0.2', c=colormap(0))
+        # plt.plot(UD_from_H_hours(Hs, 5, D)/setk, Hs/D, label='5 hour, D=0.2', c=colormap(0.1))
+        # plt.plot(UD_from_H_hours(Hs, 10, D)/setk, Hs/D, label='10 hour, D=0.2', c=colormap(0.2))
+        # plt.plot(UD_from_H_hours(Hs, 30, D)/setk, Hs/D, label='30 hour, D=0.2', c=colormap(0.3))
+        # set H = 10, sweep hours and D
+        H = 10
+        Ds = np.linspace(0.01, 100, 1000)
+        # plt.plot(UD_from_H_hours(H, 1, Ds)/setk, H/Ds, '--', label='1 hour, L=10', c=colormap(0))
+        # plt.plot(UD_from_H_hours(H, 5, Ds)/setk, H/Ds, '--',label='5 hour, L=10', c=colormap(0.1))
+        # plt.plot(UD_from_H_hours(H, 10, Ds)/setk, H/Ds, '--',label='10 hour, L=10', c=colormap(0.2))
+        # plt.plot(UD_from_H_hours(H, 30, Ds)/setk, H/Ds, '--',label='30 hour, L=10', c=colormap(0.3))
+        # plt.plot(UD_from_H_hours(Hs, 1, D/5.477), Hs/(D/5.477), label='1 hour, D=0.0365')
+        plt.xlim(min(U_D_alpha_unique), max(U_D_alpha_unique))
+        plt.ylim(min(H_D_unique), max(H_D_unique))
+        # plt.plot(Hs/0.2, UD_from_H_hours(Hs, 40, D), label='40 hour')
+        # plt.plot(Hs/0.2, UD_from_H_hours(Hs, 80, D), label='80 hour')
+        # UD2H = np.logspace(np.log10(min(df['U']*0.2**2/df['H'])), np.log10(max(df['U']*0.2**2/df['H'])), 10)
+        # for val in UD2H:
+        #     plt.plot(Hs/0.2, Hs/0.2*val, label='%0.2e' % val)
+        # plt.ylim([min(df['U'].unique())*0.2, max(df['U'].unique())*0.2])
+        # plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.4), ncol=4)
+        ax.set_aspect('equal', 'box')
+        # plt.gca().set_aspect('equal', adjustable='box')
+        # plt.legend()
+        # plt.legend(title='H/U/D$^2$, D=0.2')
+        plt.title('k = %0.0f' % setk)
+        ax.set_anchor('W')
+        # divider = make_axes_locatable(ax)
+        # cax = divider.append_axes("left", size="5%", pad=0.05)
+        # cbaxes = fig.add_axes([-0.03, 0.521, 0.03, 0.435]) 
+        plt.colorbar(label='$FOM_T$')
+        # cbaxes.yaxis.tick_left()
+        # cbaxes.yaxis.set_label_position('left')
+        plt.tight_layout()
+        # plt.figure(num=2,clear=True)
+        # print(max(df['Pe']), min(df['Pe']))
+        # plt.plot(df['Pe'], df['FOM'],'.')
+        # plt.xlabel('UD$^2$/H $\propto$ D$^2$/hours')
+        # plt.ylabel('T FOM')
+        # plt.tight_layout()
+        # plt.figure(num=3,clear=True)
+        # plt.plot(df['hours'], df['FOM'],'.')
+        # plt.xlabel('hours')
+        # plt.ylabel('T FOM')
+        # plt.tight_layout()
+        # plt.xlim([-10,100])
+        print(np.log10(U_D_k_unique))
+        print(np.log10(H_D_unique))
+        print(df)
+        # if setk==3:
+            # f = interpolate.interp2d(np.log10(df['U']*D), np.log10(df['H']/D), df['FOM'], kind='linear')
+        # f = interpolate.RegularGridInterpolator((np.log10(H_D_unique), np.log10(U_D_k_unique)), df['FOM'].values.reshape(len(H_D_unique), len(U_D_k_unique)))
+        # # else:
+        #     # f = interpolate.RegularGridInterpolator((np.log10(H_D_unique/D), np.log10(U_unique*D)), df['FOM'].values.reshape(len(H_D_unique), len(U_unique)))
+        # # fig = plt.figure(num=5,clear=True)
+        # ax = fig.add_subplot(223)
+        # hours_loop = [1, 5, 10, 30]
+        # # H_loop = np.array([2,4,6,8,10,12,14,16,18,20])
+        # H_loop = np.linspace(2,20,100)
+        # for hour in hours_loop:
+        #     H_FOMS = []
+        #     for H in H_loop:
+        #         ynew = np.log10(UD_from_H_hours(H, hour, D)/setk)
+        #         xnew = np.log10(H/D)
+        #         try:
+        #             znew = f(np.array([[xnew, ynew]]))
+        #         except ValueError:
+        #             znew = np.nan
+        #         H_FOMS.append(znew)
+        #     plt.plot(H_loop, H_FOMS, label='%0.0f hours' % hour)
+        # plt.title('$FOM_T$ for D = 0.2')
+        # plt.ylim([0,1])
+        # plt.legend()
+        # plt.xlabel('L')
+        # plt.ylabel('FOM')
+        # # plt.grid()
+        # plt.tight_layout()
+
+        # # fig = plt.figure(num=6,clear=True)
+        # ax = fig.add_subplot(224)
+        # hours_loop = [1, 5, 10, 30]
+        # D_loop = np.linspace(0.01, 1, 100)
+        # H = 10
+        # for hour in hours_loop:
+        #     D_FOMS = []
+        #     for D in D_loop:
+        #         ynew = np.log10(UD_from_H_hours(H, hour, D)/setk)
+        #         xnew = np.log10(H/D)
+        #         try:
+        #             znew = f(np.array([[xnew, ynew]]))
+        #         except ValueError:
+        #             znew = np.nan
+        #         D_FOMS.append(znew)
+        #     plt.plot(D_loop, D_FOMS, label='%0.0f hours' % hour)
+        # plt.title('$FOM_T$ for L = 10')
+        # plt.legend()
+        # plt.ylim([0,1])
+        # plt.xlabel('D')
+        # plt.ylabel('FOM')
+        # # plt.grid()
+        # plt.tight_layout()
+        
+        
+        # ax.set_yscale('log')
+        # ax.set_xscale('log')
+        plt.savefig('../plots/sweep_HD_UDk_k%0.0f.png' % setk, dpi=300)
+        # plt.show()
+    plt.figure(num=10)
+    plt.xlabel('${UD_f}/{\\alpha_s}$', fontsize=20)
+    plt.tight_layout()
+    plt.savefig('../plots/sweep_HD_UDk_k_all.png', dpi=300)
+    plt.savefig('../plots/sweep_HD_UDk_k_all.pdf')
+    plt.close()
+    # plt.ylabel('H/D')
+    # plt.colorbar()
+
+def sweep_HD_UDk_k_Ar():
+    k_Ar = 0.08
+    rho_Ar = 0.2
+    cp_Ar = 520
+    rho_C = 1700
+    cp_C = 2000
+    # df = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    # df2 = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10_30hrs.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    # df3 = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10_highU.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    # df4 = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10_highH.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    df_all = pd.read_csv('../data/sweep_HD_UDk_k_Ar_all_new.csv', names=['UD/k', 'H/D', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    # df_2 = pd.read('../data/sweep_HD_UDk_k_Ar_2.csv', names=['UD/k', 'H/D', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    # df_3 = pd.read('../data/sweep_HD_UDk_k_Ar_3.csv', names=['UD/k', 'H/D', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    # df_all = df_1.append(df_2).append(df_3)
+    # setk = 10
+    fig10 = plt.figure(num=10, clear=True, figsize=(5,12))
+    # ax10 = fig10.add_subplot(111)
+    numk = len(df_all['k'].unique())
+    for index, setk in enumerate(df_all['k'].unique()):
+        # for index, setk in enumerate([1]):
+        D = 0.2
+        print(setk, D)
+        df = df_all[df_all['k']==setk]
+        # df = df.append(df2).append(df3).append(df4)
+        data = []
+        cmap = mpl.cm.get_cmap('nipy_spectral')
+        H_D_unique = np.array(sorted(df['H/D'].unique()))
+        U_D_k_unique = np.array(sorted(df['UD/k'].unique()))
+        for H in H_D_unique:
+            for U in U_D_k_unique:
+                df_i = df[(df['H/D'] == H) & (df['UD/k'] == U)]
+                try:
+                    time = df_i['time']/max(df_i['time'])*2
+                except:
+                    data.append([H,U,np.nan, np.nan, np.nan])
+                    continue
+                Tout = (df_i['outlet_T']-2170)/500
+                # if Tout > 1, set to 1
+                Tout = np.where(Tout>1, 1, Tout)
+                # if U == 1e-3:
+                #     continue
+                # D = df_i['D'].unique()[0]
+                k = df_i['k'].unique()[0]
+                hours = hours_from_H_U_Ar(H, U)
+                Pe = U*D**2/H
+                # print(Pe)
+                FOM = np.trapz(Tout[:int(len(Tout)/2)], time[:int(len(time)/2)])
+                # vel = U*setk/D
+                # if vel > 300:
+                #     FOM = np.nan
+                data.append([H,U,FOM, hours, Pe])
+                # plt.figure(num=4)
+                Pe_norm = np.sqrt((Pe)/(0.04))
+                # if abs((Pe_norm*10) - np.round(Pe_norm*10))< 0.05:
+                # plt.plot(time, Tout, '-', label='H %0.0fm, D %0.1fm, U %0.2em/s, k %0.0f' % (H, D, U, k), color=cmap(Pe_norm*0.9))
+        # print(sorted(H_D_unique))
+        # print(sorted(U_unique))
+        fig = plt.figure(num=index+1,clear=True,figsize=(10,8))
+        ax = fig.add_subplot(211)
+        # ax = plt.axes(projection='3d')
+        df = pd.DataFrame(data, columns=['H/D', 'UD/k', 'FOM','hours','Pe'])
+        U_D_alpha_unique = U_D_k_unique * rho_C * cp_C
+        U,H = np.meshgrid(sorted(U_D_alpha_unique), sorted(H_D_unique))
+        # plt.contourf(H/D, U*D, df['FOM'].values.reshape(len(H_D_unique), len(U_unique)), cmap='viridis')
+        colormap = mpl.cm.get_cmap('tab10')
+        plt.figure(num=10)
+        ax10 = fig10.add_subplot(numk,1,index+1)
+        cf = plt.contourf(U, H, df['FOM'].values.reshape(len(H_D_unique), len(U_D_k_unique)), levels=np.linspace(0,1,101), cmap='viridis')
+        plt.vlines(300*0.2/(setk/(rho_C*cp_C)), min(H_D_unique), max(H_D_unique), color='k', linestyle='--')
+        for c in cf.collections:
+            c.set_edgecolor("face")
+            c.set_linewidth(0.000000000001)
+        # plt.scatter(U*D/setk, H/D, df['FOM'].values.reshape(len(H_D_unique), len(U_unique)), cmap='viridis')
+        ax10.set_yscale('log')
+        plt.xlim([min(U_D_alpha_unique), max(U_D_alpha_unique)])
+        plt.ylim([min(H_D_unique), max(H_D_unique)])
+        ax10.set_xscale('log')
+        ax10.set_title('$k_s/k_f$ = %0.0f' % (setk/k_Ar), fontsize=20)
+        plt.tight_layout()
+        if setk == 10:
+            plt.ylabel('$\\dfrac{L}{D}$', rotation=0, fontsize=20, labelpad=10)
+            plt.colorbar().set_label('$FOM_T$', fontsize=20)
+        else:
+            plt.colorbar()
+        # plt.colorbar()
+        plt.figure(num=index+1)
+        plt.contourf(U, H, df['FOM'].values.reshape(len(H_D_unique), len(U_D_k_unique)), levels=np.linspace(0,1,1001, endpoint=True), cmap='viridis')
+        # plt.scatter(df['U']*0.2, df['H']/0.2, c=df['FOM'])
+        ax.set_yscale('log')
+        ax.set_xscale('log')
+        plt.ylabel('$\\dfrac{L}{D}$', rotation=0, fontsize=20)
+        plt.xlabel('$\\dfrac{UD}{\\alpha}$', fontsize=20)
         # Hs = np.linspace(min(df['H/D'].unique()), max(df['H/D'].unique()), 100)
         # Hs = np.linspace(min(df['H'].unique()), max(df['H'].unique()), 100)
         Hs = np.linspace(0.1, 100, 100)
@@ -763,15 +989,15 @@ def sweep_HD_UDk_k():
         
         # ax.set_yscale('log')
         # ax.set_xscale('log')
-        plt.savefig('../plots/sweep_HD_UDk_k%0.0f.png' % setk, dpi=300)
+        plt.savefig('../plots/sweep_HD_UDk_k%0.0f_Ar.png' % setk, dpi=300)
         # plt.show()
     plt.figure(num=10)
-    plt.xlabel('$\\dfrac{UD}{k}$')
+    plt.xlabel('${UD_f}/{\\alpha_s}$', fontsize=20)
     plt.tight_layout()
-    plt.savefig('../plots/sweep_HD_UDk_k_all.png', dpi=300)
+    plt.savefig('../plots/sweep_HD_UDk_k_all_Ar.png', dpi=300)
+    plt.savefig('../plots/sweep_HD_UDk_k_all_Ar.pdf')
     # plt.ylabel('H/D')
     # plt.colorbar()
-
 
 def sweep_HD_UDk_k_hoursfrac():
     # df = pd.read_csv('5series_discharge/sweep_Pe_HD_UD_k10.csv', names=['H', 'D', 'U', 'k', 'time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
@@ -1530,6 +1756,19 @@ def opt_H_D_from_hours_k(hours,k):
 
     pass
 
+
+def fluid_k():
+    df = pd.read_csv('../data/COMSOL_largeblock_fluidk.csv', names=['k_s','D_s','L','k_f','U','time', 'inlet_T','outlet_T','block_T','Sn_T','bottom_right_T'], skiprows=5)
+    df_1 = df[df['k_f']==60]
+    df_2 = df[df['k_f']==6]
+    plt.plot(df_1['time']/max(df_1['time']), (df_1['outlet_T']-2173)/500, label='k=60') 
+    plt.plot(df_2['time']/max(df_2['time']), (df_2['outlet_T']-2173)/500, label='k=6')
+    plt.legend()
+    plt.xlabel('Time')
+    plt.ylabel('Tout')
+    plt.tight_layout()
+    plt.show()
+
 # data = import_data()
 # plot_data(data)
 # analyze_data(data)
@@ -1555,17 +1794,13 @@ def opt_H_D_from_hours_k(hours,k):
 # plt.show()
 # sweep_Pe_H_U_2()
 # polyfit_HD_UD()
-sweep_HD_UDk_k()
 # plt.show()
 # sweep_HD_UDk_k_hoursfrac()
 # plt.show()
 # interp_HD_UDk_k()
-krr = KRR_interp_HD_UDk_k()
 # plt.show()
 # krr2, krr3 = KRR_interp_HD_UDk_k_2()
 # plt.show()
-opt_H_D_from_hours_k(30, 10)
-plt.show()
 # opt_H_D_from_hours_k(10, 10)
 # plt.show()
 # opt_H_D_from_hours_k(5, 10)
@@ -1573,4 +1808,11 @@ plt.show()
 # opt_H_D_from_hours_k(4, 10)
 # plt.show()
 # opt_H_D_from_hours_k(1, 10)
+# plt.show()
+# fluid_k()
+
+# sweep_HD_UDk_k()
+sweep_HD_UDk_k_Ar()
+# krr = KRR_interp_HD_UDk_k()
+# opt_H_D_from_hours_k(30, 10)
 # plt.show()
